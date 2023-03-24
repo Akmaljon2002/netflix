@@ -1,7 +1,11 @@
-from django.http import JsonResponse
 from rest_framework import status
+from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.viewsets import ModelViewSet
+from rest_framework.authentication import TokenAuthentication
+from rest_framework.permissions import *
+
 from .models import *
 from .serializers import *
 
@@ -104,4 +108,61 @@ class TarifDetailView(APIView):
             tarif.save()
             return Response(ser.data, status=status.HTTP_202_ACCEPTED)
         return Response(ser.errors, status=status.HTTP_400_BAD_REQUEST)
+
+# class KinolarAPIView(APIView):
+#     def get(self, request):
+#         kinolar = Kino.objects.all()
+#         serializer = KinoSerializer(kinolar, many=True)
+#         return Response(serializer.data)
+#     def post(self, request):
+#         serializer = KinoCreateSerializer(data=request.data)
+#         if serializer.is_valid():
+#             serializer.save()
+#             return Response(serializer.data, status=status.HTTP_201_CREATED)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class KinoViewSet(ModelViewSet):
+    queryset = Kino.objects.all()
+    serializer_class = KinoSerializer
+    # get, post, patch, delete, retrieve(bittasini get qiladi)
+    @action(detail=True)
+    # kinolar/3/aktyorlar
+    def aktyorlar(self, request, pk):
+        kino = Kino.objects.get(id=pk)
+        actors = kino.aktyorlar.all()
+        serializer = AktyorSerializer(actors, many=True)
+        return Response(serializer.data)
+
+
+class KinoDetailView(APIView):
+    def get(self, request, pk):
+        kino = Kino.objects.get(id=pk)
+        serializer = KinoSerializer(kino)
+        return Response(serializer.data)
+    def put(self, request, pk):
+        kino = Kino.objects.get(id=pk)
+        serializer = KinoCreateSerializer(kino, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class IzohViewSet(ModelViewSet):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    queryset = Izoh.objects.all()
+    serializer_class = IzohSerilizer
+
+    def get_queryset(self):
+        queryset = Izoh.objects.filter(user=self.request.user)
+        return queryset
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def perform_destroy(self, instance):
+        if instance.user == self.request.user:
+            instance.delete()
 
