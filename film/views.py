@@ -1,4 +1,4 @@
-from rest_framework import status
+from rest_framework import status, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -25,7 +25,16 @@ class HelloAPI(APIView):
 
 class AktyorlarAPIView(APIView):
     def get(self, request):
-        aktyorlar = Aktyor.objects.all()
+        soz = request.query_params.get('qidirish')
+        soz2 = request.query_params.get('tartib')
+        if soz is None or soz == "":
+            aktyorlar = Aktyor.objects.all()
+        else:
+            aktyorlar = Aktyor.objects.filter(ism__contains=soz)
+        if soz2 is None or soz2 == "":
+            aktyorlar = aktyorlar
+        else:
+            aktyorlar = aktyorlar.order_by(soz2)
         serializer = AktyorSerializer(aktyorlar, many=True)
         return Response(serializer.data)
     def post(self, request):
@@ -124,6 +133,10 @@ class TarifDetailView(APIView):
 class KinoViewSet(ModelViewSet):
     queryset = Kino.objects.all()
     serializer_class = KinoSerializer
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['nom']
+    order_fields = ['yil']
+
     # get, post, patch, delete, retrieve(bittasini get qiladi)
     @action(detail=True)
     # kinolar/3/aktyorlar
