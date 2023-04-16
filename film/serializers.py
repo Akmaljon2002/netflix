@@ -9,7 +9,7 @@ class AktyorSerializer(serializers.Serializer):
     jins = serializers.CharField(max_length=30)
 
 
-    def validate_ism(self, qiymat):
+    def validate_ism(self, qiymat:str):
         if len(qiymat) < 3:
             raise serializers.ValidationError("Ism bunaqa kalta bo'lmaydi!")
         return qiymat
